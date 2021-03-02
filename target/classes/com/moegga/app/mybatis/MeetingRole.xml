@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.moegga.app.mybatis.MeetingRole">
+   
+	<insert id="insertMemberRole" parameterType="java.util.Map">
+		<!-- INSERT INTO MEETINGROLE(roleno,rolename,meetingno) VALUES(SEQ_MEETINGROLE.NEXTVAL,#{memberRole},#{meetingNo}) -->
+		INSERT INTO MEETINGROLE(roleno,rolename,meetingno,enabled) VALUES(SEQ_MEETINGROLE.NEXTVAL,#{memberRole},#{meetingNo},0)
+	</insert>
+	   
+	<insert id="insertOperator" parameterType="java.util.Map">
+		<!-- INSERT INTO MEETINGROLE(roleno,rolename,meetingno,id,name) VALUES(SEQ_MEETINGROLE.NEXTVAL,#{operatorRole},#{meetingNo},#{id},#{name}) -->
+		INSERT INTO MEETINGROLE(roleno,rolename,meetingno,id,name,enabled) VALUES(SEQ_MEETINGROLE.NEXTVAL,#{operatorRole},#{meetingNo},#{id},#{name},1)
+	</insert>
+
+	<select id="selectMeetingRoleList"  parameterType="java.util.Map" resultType="int">
+	SELECT count(*) FROM MEETINGROLE WHERE meetingno=#{meetingNo} AND enabled=1 AND id is not null
+	</select>
+	
+	<select id="selectThisMeetingRole" parameterType="java.util.Map" resultType="meetingRoleDTO">
+	SELECT * FROM MEETINGROLE WHERE meetingno=#{meetingNo}
+	</select>
+	
+	
+	<update id="updateOperatorRole" parameterType="java.util.Map">
+	UPDATE MEETINGROLE SET rolename=#{operatorRole} WHERE id=#{operator}
+	</update>
+	
+	<update id="updateMemberRole" parameterType="java.util.Map">
+	UPDATE MEETINGROLE SET rolename=#{memberRole} WHERE roleno=#{roleNo} AND id IS NULL AND name IS NULL
+	</update>
+	
+	<select id="selectJoinMeetingList"  parameterType="java.util.Map" resultType="int">
+	SELECT count(*) FROM MEETINGROLE WHERE enabled=1 AND id=#{id}
+	</select>
+
+	<select id="selectMyMeetingRole" parameterType="java.util.Map" resultType="meetingRoleDTO">
+	SELECT * FROM MEETINGROLE WHERE id=#{id} AND enabled=1
+	</select>
+	
+	<!-- 
+	<update id="joinMeetingDescription" parameterType="java.util.Map">
+	UPDATE MEETINGROLE SET id=#{id},name=#{name} WHERE roleno=#{roleNo} AND meetingno=#{meetingNo}
+	</update>
+	 -->
+	<insert id="joinMeetingDescription" parameterType="java.util.Map">
+	INSERT INTO application_role VALUES(seq_registerrole.nextval, #{meetingNo}, #{roleNo}, #{id})
+	</insert>
+	
+	<select id="applicationRoleList" parameterType="java.util.Map" resultType="meetingRoleDTO">
+	SELECT ar.*, mr.rolename, m.name FROM application_role ar JOIN meetingrole mr ON ar.roleno=mr.roleno JOIN member m ON ar.id=m.id
+	WHERE ar.meetingno=#{meetingNo}
+	</select>
+	
+	<select id="isApplication" parameterType="java.util.Map" resultType="java.util.Map">
+	SELECT m.name, ar.id, ar.meetingno, ar.roleno FROM application_role ar JOIN member m ON ar.id=m.id 
+	GROUP BY ar.id, ar.meetingno, m.name, ar.roleno
+	HAVING ar.id=#{id} AND ar.meetingno=#{meetingNo}
+	</select>
+	
+	<delete id="deleteApplicationRole" parameterType="java.util.Map">
+	DELETE application_role WHERE id=#{id} AND meetingno=#{meetingNo} AND roleno=#{roleNo}
+	</delete>
+	 
+	<update id="joinMeetingOk" parameterType="java.util.Map">
+	UPDATE meetingRole SET enabled=1, id=#{id}, name=#{name} WHERE roleno=#{roleNo}
+	</update>
+	
+	<update id="joinMeetingReject" parameterType="java.util.Map">
+	UPDATE MEETINGROLE SET id='',name='' WHERE roleno=#{roleNo}
+	</update>
+	
+	<update id="deleteMyMeeting" parameterType="java.util.Map">
+	UPDATE MEETINGROLE SET id='',name='',enabled=0 WHERE roleno=#{roleNo}
+	</update>
+
+</mapper>

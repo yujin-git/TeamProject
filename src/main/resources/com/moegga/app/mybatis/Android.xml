@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.moegga.app.mybatis.Android">
+	<!-- 로그인  -->
+	<select id="androidlogin" parameterType="java.util.Map" resultType="java.util.Map">
+	 	SELECT m.id,pwd,name,town FROM member m join town t on m.id=t.id WHERE m.id=#{id} and pwd=#{pwd}
+	</select>
+	<!-- 안드 메인용 -->
+	<select id="getRecommends" parameterType="java.util.Map" resultType="com.moegga.app.service.MeetingDTO">
+		select m.*, mainCategory, subCategory from 
+		meeting m join category c on m.categoryno = c.categoryno
+		<if test="meetingnos.size != 0">
+             where meetingno  in
+             <foreach collection="meetingnos" item="item" index="index" separator="," open="(" close=")">
+                 #{item}
+             </foreach>
+         </if>
+		order by meetingno desc
+	</select>
+	<select id="getJoinedMeeting" parameterType="String" resultType="com.moegga.app.service.MeetingDTO">
+		select m.*, mainCategory, subCategory from 
+		meeting m join category c on m.categoryno = c.categoryno
+		join meetingrole r on m.meetingno = r.meetingno
+		where id = #{id} 
+		order by m.meetingno desc
+	</select>
+	<!-- 동네 둘러보기 -->
+	<select id="androidgetTown" parameterType="String" resultType="String">
+		select town from town where id = #{id}
+	</select>
+	<select id="androidgetMeetings" parameterType="String" resultType="com.moegga.app.service.MeetingDTO">
+		select m.*, mainCategory, subCategory from 
+		meeting m join category c on m.categoryno = c.categoryno
+		where town = #{town} order by meetingno desc
+	</select>
+	<select id="androidgetCurrentRoleCount" parameterType="int" resultType="int">
+		select count(*) from meetingrole where meetingno = #{meetingno}
+	</select>
+	
+	<select id="androidgetMembers" parameterType="String" resultType="com.moegga.app.service.MemberDTO">
+		select m.id,name,profileimg,pr from member m join town t on m.id = t.id where town = #{town} and authority = 'ROLE_USER'
+	</select>
+	<select id="androidgetInterests" parameterType="String" resultType="java.util.Map">
+		select maincategory,subcategory from interests i join category c on i.categoryno = c.categoryno where id = #{id}
+	</select>
+	
+	<select id="androidgetMemberInfo" parameterType="String" resultType="java.util.Map">
+		select m.id, name, age, gender, tel, profileimg, pr, about_me, town
+		from member m join town t on m.id = t.id
+		where m.id = #{id}
+	</select>
+	
+	<select id="androidgetAppealImg" parameterType="String" resultType="String">
+		select img from appealimg where id = #{id}
+	</select>
+	
+	<!-- 게시판 -->
+	<select id="androidgetBBS" parameterType="java.util.Map" resultType="java.util.Map">
+		select b.*, bannerimg, meetingname, operator 
+		from bbs b join meeting me on b.meetingno = me.meetingno 
+		where division = 1 order by bbspostdate desc
+	</select>
+	<select id="androidgetBBSImg" parameterType="java.util.Map" resultType="String">
+		select img from bbs_img where bbsno = #{BBSNO} order by imgno desc
+	</select>
+	<insert id="androidinsertBBS" parameterType="java.util.Map">
+		insert into bbs(bbsno,contents,meetingno,id,division,bbspostdate) values(seq_bbs.nextval,#{contents},#{meetingno},#{id},1,sysdate)
+	</insert>
+	<select id ="androidgetBBSNo" parameterType="java.util.Map" resultType="String">
+		select bbsno from 
+		(SELECT bbsno ,ROWNUM R FROM 
+            (SELECT bbsno FROM
+                BBS where division=1 and id= #{id} and meetingno = #{meetingno}
+                ORDER BY BBSNO DESC) T)
+                  WHERE R = 1 
+	</select>
+	<select id="androidgetMeetingNoAndOperator" parameterType="String" resultType="java.util.Map">
+		select meetingname,operator from bbs b join meeting m on b.meetingno = m.meetingno where bbsno = #{bbsno}
+	</select>
+	<insert id="androidinsertBBSImg" parameterType="java.util.Map">
+		insert into bbs_img values(seq_bbs_img.nextval,#{bbsno},#{filename})
+	</insert>
+	<!-- 공연 -->
+	<select id="androidgetPerform" parameterType="String" resultType="java.util.Map">
+		select p.*, meetingname,operator,bannerimg from performance p join meeting m on m.meetingno = p.meetingno
+		<if test='!town.equals("")'>
+			where town = #{town}
+		</if>
+		order by PERFORM_DATE desc
+		
+	</select>
+	
+	<!-- 펀딩 -->
+	<select id="androidgetFunding"  resultType="java.util.Map">
+		SELECT * FROM FUNDING f JOIN MEETING m ON f.meetingno = m.meetingno
+		JOIN CATEGORY c ON m.categoryno=c.categoryno 
+		WHERE f.enabled='1'
+		ORDER BY f.meetingno DESC
+	</select>
+	<select id="androidgetSupporter" parameterType="String" resultType="String">
+		SELECT count(*) FROM DONATION WHERE meetingno=#{meetingNo}
+	</select>
+	
+	<!-- 아이디 중복체크용 -->
+   <select  id="idchecked" parameterType="java.util.Map" resultType="int">
+      SELECT COUNT(*) FROM Member WHERE id = #{id}
+   </select>
+   
+      <!--회원가입 -->
+   <insert id="insertandroidMember" parameterType="java.util.Map">
+      INSERT INTO MEMBER(ID,PWD,NAME,AGE,GENDER,TEL,POSTDATE,AUTHORITY,ENABLED)
+      VALUES(#{id},#{pwd},#{name},#{age},#{gender},#{tel},DEFAULT,DEFAULT,DEFAULT)
+   </insert>
+   
+   <!--동설정 -->
+   <insert id="insertandroidTown" parameterType="java.util.Map">
+      INSERT INTO TOWN(TOWNNO,TOWN,ID)
+      VALUES(SEQ_TOWN.NEXTVAL,#{addr},#{id})
+   </insert>
+
+
+   <update id="updateInfoandroid" parameterType="java.util.Map">
+      UPDATE MEMBER
+      <trim prefix="SET" suffixOverrides=",">
+         <if test="img != null">profileimg=#{img},</if>
+         <if test="pr != null">pr=#{pr},</if>
+         <if test="about_me != null">about_me=#{about_me},</if>
+      </trim>
+      WHERE id=#{id}
+   </update>
+           <!-- 마이 페이지 프로필  -->
+    <select id="getAndroidprofile" parameterType="String" resultType="java.util.Map">
+      select m.*,t.id,town from member m join town t on m.id =t.id where m.id = #{id}
+   </select>
+      <!-- 마이 페이지 프로필  -->
+      
+      <!-- 메인카테고리 인터레스트 목록 -->
+     <select id="maincategorylist" parameterType="java.util.Map" resultType="com.moegga.app.service.CategoryDTO">
+        select maincategory from category
+   </select>
+   <!-- 메인카테고리 인터레스트 목록 -->
+   
+   <!-- 서브카테고리 인터레스트 목록 -->
+    <select id="subcategorylist" parameterType="java.util.Map" resultType="com.moegga.app.service.CategoryDTO">
+        select subcategory from category where maincategory =#{maincategory}
+   </select>
+    <!-- 서브카테고리 인터레스트 목록 -->
+   
+   
+     <select id="meetingdayselect" parameterType="java.util.Map" resultType="com.moegga.app.service.MeetingDateDTO">
+        select * from MeetingDate where meetingno =#{meetingno}
+   </select>
+   
+      <!-- 인터레스트 추가 categoryno 값 얻기-->
+   <select id="categoryNoselect" parameterType="java.util.Map" resultType="String">
+        select categoryno from category where maincategory =#{maincategory} and subcategory =#{subcategory}
+   </select>
+      <!-- 인터레스트 추가 categoryno 값 얻기-->
+   
+      <!-- 인터레스트 추가-->
+   <insert id="interestInsert" parameterType="java.util.Map">
+      INSERT INTO INTERESTS(INTERESTSNO,id,categoryno)
+      VALUES(SEQ_INTERESTS.NEXTVAL,#{id},#{categoryno})
+   </insert>
+    <!-- 인터레스트 추가-->
+    
+     <!-- 흥미 중복체크용 -->
+   <select  id="interestchecked" parameterType="java.util.Map" resultType="int">
+     SELECT COUNT(*) FROM INTERESTS WHERE id = #{id} and categoryno = #{categoryno}
+     
+   </select>
+   
+   <!-- 토큰 저장 -->
+   <insert id="insertToken" parameterType="String">
+   	INSERT INTO FCM_TOKENS(ID,TOKEN) VALUES(TOKENS_SEQ.NEXTVAL,#{token})
+   </insert>
+</mapper>

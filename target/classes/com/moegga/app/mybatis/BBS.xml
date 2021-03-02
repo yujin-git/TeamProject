@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.moegga.app.mybatis.BBS">
+
+   <resultMap type="bbsDTO" id="bbsDTPResult">
+
+      <result property="bbsNO" column="bbsNO"/>
+      <result property="title" column="title" />
+      <result property="contents" column="contents" />
+      <result property="meetingNO" column="meetingNO" />
+      <result property="id" column="id" />
+      <result property="division" column="division" />
+      <result property="subCategoryNo" column="subCategoryNo" />
+      <result property="bbsPostdate" column="bbsPostdate" />
+
+   </resultMap>
+
+
+   <insert id="BBSInsert" parameterType="java.util.Map">
+      INSERT INTO BBS(bbsNo,title,id,division,contents,BBSPOSTDATE)
+      VALUES(SEQ_BBS.NEXTVAL,#{title},#{id},3,#{contents},DEFAULT)
+   </insert>
+
+
+   <select id="BBSGetTotalRecord" parameterType="java.util.Map" resultType="int">
+      SELECT COUNT(*) FROM BBS WHERE DIVISION=3
+      <if test="id != null">and id = #{id}</if>
+   </select>
+   
+   <select id="BBSMySelectList" parameterType="java.util.Map"
+      resultType="java.util.Map">
+      SELECT * FROM
+      (SELECT T.*,ROWNUM R FROM
+      (SELECT bbsNO,title,contents,m.id,name,BBSPOSTDATE FROM
+      BBS b join MEMBER m ON b.id =m.id where division=3 and m.id= #{id}
+      ORDER BY BBSNO DESC) T)
+      WHERE R BETWEEN #{start} AND #{end}
+   </select>
+
+
+   <!-- ===================모임 게시글 입력======================= -->
+   <insert id="MBBSInsert" parameterType="java.util.Map">
+      INSERT INTO BBS
+      VALUES(SEQ_BBS.NEXTVAL,NULL,#{contents},#{meetingno},#{id},1,DEFAULT)
+   </insert>
+   <select id="MBBSNoselect"  resultType="int">
+      SELECT bbsno FROM (SELECT * FROM BBS ORDER BY BBSPOSTDATE DESC) WHERE rowNum=1
+   </select>
+   <insert id="insertMBBSImg" parameterType="java.util.Map">
+      INSERT INTO BBS_IMG
+      VALUES(SEQ_BBS_IMG.NEXTVAL,#{mbbsno},#{img})
+   </insert>
+
+   <delete id="deleteMBBSImg" parameterType="java.util.Map">
+   DELETE FROM BBS_IMG WHERE imgno=#{imgno}
+   </delete>
+   
+   <select id="selectMBBSImg"  resultType="bbsDTO">
+      SELECT b.bbsno, bi.img imgname, bi.imgno FROM bbs b 
+         JOIN BBS_IMG bi ON b.bbsno=bi.bbsno
+         WHERE b.bbsno=#{mbbsno}
+         ORDER BY bi.imgno DESC
+   </select>
+   
+   <select id="selectMeetingnoById" parameterType="java.util.Map" resultType="int">
+     SELECT meetingno FROM meetingrole WHERE id=#{id}
+   </select>
+   
+    <select id="selectMeetingNameById" parameterType="java.util.Map" resultType="String">
+     SELECT meetingname 
+       FROM meeting m
+       JOIN meetingrole mr ON m.meetingno=mr.meetingno
+       WHERE mr.id=#{id}
+   </select>
+   
+   
+   <!-- ===================모임 게시글 입력 끝======================= -->
+
+   <!-- ==================모임 상세보기 게시글 목록============================== -->
+   <select id="meetingViewBBS"  parameterType="java.util.Map" resultType="java.util.Map">
+   SELECT b.bbsno,b.contents,b.bbspostdate,m.meetingname,b.id,mb.profileimg,m.bannerimg
+      FROM BBS b
+      join MEETING m ON b.id=m.operator
+      join MEMBER mb ON b.id=mb.id
+      WHERE m.meetingno=#{meetingNo} AND division=1
+      ORDER BY b.BBSNO DESC
+   </select>
+   <!-- ==================모임 상세보기 게시글 목록 끝============================== -->
+
+   <!-- =====================모임 게시판 목록================================= -->
+   <!-- 게시글 내용들 -->
+   <select id="mBBSList" resultType="java.util.Map">
+      SELECT b.bbsno,b.contents,bbspostdate,m.meetingname,b.id,mb.profileimg,m.bannerimg
+      FROM BBS b
+      join MEETING m on b.meetingno = m.meetingno 
+      join MEMBER mb ON b.id=mb.id
+      WHERE division='1'
+      ORDER BY b.BBSNO DESC
+   </select>
+
+   <!-- 이미지 개수 구하기 -->
+   <select id="mBBSListImgCount" resultType="String" parameterType="String">
+      SELECT COUNT(*) AS IMGCOUNT FROM BBS_IMG WHERE bbsno=#{bbsno}
+   </select>
+
+
+   <!-- 게시글번호 별 이미지 -->
+   <select id="mBBSImg" resultType="java.util.Map" parameterType="String">
+      SELECT bi.img
+      FROM BBS b
+      JOIN BBS_IMG bi ON bi.bbsno = b.bbsno
+      JOIN MEETING m ON m.meetingno = b.meetingno
+      WHERE b.bbsno=#{bbsno}
+      ORDER BY b.bbsno
+      
+   </select>
+   <!-- 댓글 리스트 -->
+   <select id="commentList" resultType="bbsDTO">
+      SELECT commentno,b.bbsno,bc.id, bc.contents commentContents, m.profileimg
+      FROM BBS b
+      JOIN BBS_COMMENT bc ON bc.bbsno = b.bbsno
+      JOIN MEMBER m ON bc.id = m.id
+      ORDER BY COMMENTNO DESC
+   </select>
+
+   <!-- 댓글 입력 -->
+   <insert id="mBBSCommentInput" parameterType="java.util.Map">
+      INSERT INTO BBS_COMMENT
+      VALUES(SEQ_BBS_COMMENT.NEXTVAL,#{comment},#{bbsno},#{id})
+   </insert>
+
+   <!-- =====================모임 게시판 목록 끝================================= -->
+
+   
+   <!-- ====================모임 게시판 수정======================== -->
+   <select id="mBBSSelectOne"  parameterType="java.util.Map" resultType="bbsDTO">
+      SELECT b.contents, b.bbsno mbbsno
+      FROM BBS b
+      WHERE division=1 AND b.bbsno=#{BBSNO}
+   </select>
+   
+   <select id="mBBSSelectOneImg"  parameterType="java.util.Map" resultType="java.util.Map">
+      SELECT b.bbsno mbbsno,bi.img, m.meetingname
+      FROM BBS b 
+      JOIN MEETING m ON b.meetingno=m.meetingno
+      JOIN BBS_IMG bi ON b.bbsno=bi.bbsno
+      WHERE b.bbsno=#{BBSNO}
+      
+   </select>
+
+   <update id="mBBSEdit" parameterType="java.util.Map">
+   UPDATE BBS SET contents=#{contents} WHERE bbsno=#{mbbsno}
+   </update>
+   <delete id="mBBSImgDelete" parameterType="java.util.Map">
+      DELETE from bbs_img WHERE bbsno=#{mbbsno}
+   </delete>
+   <!-- ====================모임 게시판 수정 끝======================== -->
+
+   
+   <!-- ====================모임 게시판 삭제 ======================== -->
+   <delete id="mBBSDelete" parameterType="java.util.Map">
+      DELETE from bbs WHERE bbsno=#{BBSNO}
+   </delete>
+   <!-- ====================모임 게시판 삭제 끝 ======================== -->
+
+
+   <select id="selectLatestMeetingBBS"
+      parameterType="java.util.Map" resultType="String">
+      SELECT bbsno FROM BBS
+      WHERE
+      bbsno =
+      (SELECT max(bbsno)
+      FROM bbs WHERE meetingno=#{meetingNo}) AND
+      division=1
+   </select>
+   
+   
+   <!-- 게시글 좋아요 누르기 -->
+   <insert id="likeInsert" parameterType="java.util.Map">
+      INSERT INTO LIKE_BBS VALUES(SEQ_LIKE_BBS.NEXTVAL,#{bbsno},#{id})
+   </insert>
+   <select id="likeSelect"  parameterType="java.util.Map" resultType="String">
+      SELECT count(*) as count
+      FROM LIKE_BBS
+      WHERE id=#{id} and bbsno=#{bbsno}
+   </select>
+   <delete id="likeDelete" parameterType="java.util.Map">
+       DELETE FROM LIKE_BBS WHERE id=#{id} AND bbsno=#{bbsno}
+   </delete>
+
+
+</mapper>

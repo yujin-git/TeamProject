@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.moegga.app.mybatis.BBS_img">
+
+<select id="selectMeetingBBSImgList" parameterType="java.util.Map" resultType="java.util.Map">
+SELECT img,operator,meetingname FROM(SELECT T.*, ROWNUM R FROM(  
+     SELECT * FROM BBS_IMG bi 
+     JOIN BBS b ON bi.bbsno = b.bbsno
+     JOIN MEETING m ON b.meetingno=m.meetingno
+     WHERE b.bbsno=#{bbsNo} AND division=1 ORDER BY imgno DESC)T)
+     WHERE R BETWEEN 1 AND 2
+</select>
+	
+
+</mapper>
